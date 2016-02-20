@@ -96,7 +96,8 @@ def lpcsynth(a, g, e=None, h=128, overlaps=True):
       e = np.random.randn(nepts)
   elif type(e) == int:
       period = e;
-      e = np.sqrt(period) * (np.mod(np.arange(nepts), period) == 0).astype(float)
+      e = np.sqrt(period) * (
+        np.mod(np.arange(nepts), period) == 0).astype(float)
   else:
       nepts = e.shape[0]
       npts = nepts + h
@@ -110,10 +111,77 @@ def lpcsynth(a, g, e=None, h=128, overlaps=True):
       aa = a[hop, :]
       G = g[hop]
       if overlaps:
-          d[hbase + np.arange(w)] += np.hanning(w) * G * scipy.signal.lfilter([1], aa, e[hbase + np.arange(w)])
+          d[hbase + np.arange(w)] += np.hanning(w) * (
+            G * scipy.signal.lfilter([1], aa, e[hbase + np.arange(w)]))
       else:
-          d[hbase + np.arange(h)] = G * scipy.signal.lfilter(1, aa, e[hbase + np.arange(h)])
+          d[hbase + np.arange(h)] = G * scipy.signal.lfilter(
+            1, aa, e[hbase + np.arange(h)])
   # De-emphasis (must match pre-emphasis in lpcfit)
   pre = [1, -0.9]
   d = scipy.signal.lfilter([1], pre, d)
   return d
+
+
+def lpcBHenc(E, H=None, W=256, viz=False):
+  """
+  % P = lpcBHenc(E,H,W,viz)  Encode LPC residual as buzz/hiss pitch periods
+  %      E is a residual from LPC encoding.  P is an encoding 
+  %      which, for every H samples, returns an integer pitch period
+  %      or 0 for frames judged as noisy.  Pitch is found via autocorrelation 
+  %      over a window of W points
+  % 2001-03-19 dpwe@ee.columbia.edu
+  """
+  if not H:
+    H = int(W / 2)
+  nhops = int(E.shape[0]/H)
+  P = np.zeros(nhops)
+  pmin = 2
+  pmax = 127
+  pdthresh = 0.2
+  # Pad so that each W-point frame is centered around hop * H.
+  ee = np.hstack([np.zeros(W / 2), E, np.zeros(W / 2)])
+  for hop in np.arange(nhops):
+    xx = ee[hop * H + np.arange(W)]
+    rxx = np.correlate(xx, xx, 'full')[W - 1 + np.arange(pmin, pmax)]
+    period = pmin + np.argmax(rxx)
+    rratio = np.max(rxx)/rxx[0]
+
+    #if viz:
+    #  disp(['hop ',num2str(hop),' pd ',num2str(pd),' rrat ',num2str(rratio)]);
+    #  subplot(211); plot(xx);
+    #  subplot(212); plot(rxx); pause
+
+    if rratio > pdthresh:
+      P[hop] = period
+    else:
+      P[hop] = 0   # Noisy period
+  return P
+
+
+def lpcBHdec(P, H=128):
+  """
+  % E = lpcBHdec(P,H)  Decode LPC residual encoded as pitch periods
+  %      P is a vector pitch periods from lpcresenc.  Reconstruct a 
+  %      stylized excitation vector E with a hop size H.
+  % 2001-03-19 dpwe@ee.columbia.edu
+  """
+  nhops = P.shape[0]
+  npts = H * nhops
+  E = np.zeros(npts)
+  phs = 0    # Current phase as proportion of a cyle (new pulse at 1.0)
+  for hop in np.arange(nhops):
+    period = P[hop]
+    base = H * (hop - 1)
+    if period == 0:
+      E[base + np.arange(H)] = np.random.randn(H)
+    else:
+      pt = 0;
+      # Steps to next pulse
+      remsteps = int(np.round((1 - phs) * period))
+      while (pt + remsteps) < H:
+        pt = pt + remsteps
+        E[base + pt] = np.sqrt(period)  # so rms is 1
+        remsteps = period
+      # Store residual phase
+      phs = (H - pt)/float(period)
+  return E
