@@ -70,7 +70,7 @@ def chord_name_to_index(labels):
 
 def calculate_beat_sync_chroma_of_file(wavfilename):
     """Read the audio, calculate beat-sync chroma."""
-    y, sr = librosa.load(wavfilename)
+    y, sr = librosa.load(wavfilename, sr=None)
     hop_length = 128  # 8 ms at 16 kHz
     tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr, 
                                                  hop_length=hop_length, 
@@ -149,18 +149,19 @@ def process_items(input_list_file, wav_base_dir, lab_base_dir, output_base_dir,
         ids_to_process = all_ids[start_index:]
 
     for number, file_id in enumerate(ids_to_process):
-        print(time.ctime(), "File {:d} of {:d}: {:s}".format(number, len(ids_to_process), 
-                                                             file_id))
+        print(time.ctime(), "File {:d} of {:d}: {:s}".format(
+            number, len(ids_to_process), file_id))
         wavfilename = os.path.join(wav_base_dir, file_id + '.mp3')
-        beat_times, beat_chroma = calculate_beat_sync_chroma_of_file(wavfilename)
+        beat_times, beat_chroma = calculate_beat_sync_chroma_of_file(
+            wavfilename)
         if lab_base_dir:
             labfilename = os.path.join(lab_base_dir, file_id + '.txt')
             label_indices = calculate_label_indices(labfilename, beat_times)
         else:
             label_indices = None
         beatchromlab_filename = os.path.join(output_base_dir, file_id + '.pkl')
-        write_beat_chroma_labels(beatchromlab_filename, beat_times, beat_chroma, 
-                                 label_indices)
+        write_beat_chroma_labels(beatchromlab_filename, beat_times, 
+                                 beat_chroma, label_indices)
 
 
 #DATA_DIR = '/q/porkpie/porkpie-p9/hog-restored/hog-p9/drspeech/data/music/'
