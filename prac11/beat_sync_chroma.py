@@ -116,14 +116,14 @@ def write_beat_chroma_labels(filename, beat_times, chroma_features,
     directory = os.path.dirname(filename)
     if directory and not os.path.exists(directory):
         os.makedirs(directory)
-    with open(filename, "w") as f:
+    with open(filename, "wb") as f:
         pickle.dump((beat_times, chroma_features, label_indices), 
                     f, pickle.HIGHEST_PROTOCOL)
 
 
 def read_beat_chroma_labels(filename):
     """Read back a precomputed beat-synchronous chroma record."""
-    with open(filename, "r") as f:
+    with open(filename, "rb") as f:
         beat_times, chroma_features, label_indices = pickle.load(f)
     return beat_times, chroma_features, label_indices
 
