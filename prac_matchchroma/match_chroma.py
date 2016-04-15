@@ -53,7 +53,6 @@ def construct_pca_object(ids, num_pcas=20, frame_length=48, frame_hop=8):
   all_features, ids, starts = build_incipit_array(
     ids, pca=None, frame_length=frame_length, frame_hop=frame_hop)
   pca = sklearn.decomposition.PCA(n_components=num_pcas, whiten=True, copy=True)
-  print(all_features.shape)
   pca.fit(all_features)
   return pca
 
@@ -107,3 +106,5 @@ pca_object = construct_pca_object(pca_ids, num_pcas=16,
 all_features, all_ids, all_starts = build_incipit_array(
   all_ids, pca_object, frame_length=frame_length, frame_hop=frame_hop)
 
+print("frame_length=", frame_length, "frame_hop=", frame_hop, 
+      "all_features.shape=", all_features.shape)
