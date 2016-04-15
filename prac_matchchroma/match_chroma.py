@@ -25,7 +25,7 @@ CHROMA_BASE_DIR = os.path.join(DATA_DIR, 'beatchromlabs')
 
 def read_beat_chroma_labels(filename):
     """Read back a precomputed beat-synchronous chroma record."""
-    with open(filename, "r") as f:
+    with open(filename, "rb") as f:
         beat_times, chroma_features, label_indices = pickle.load(f)
     return beat_times, chroma_features, label_indices
 
